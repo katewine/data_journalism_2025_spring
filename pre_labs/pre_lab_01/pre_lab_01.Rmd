@@ -128,7 +128,7 @@ maryland_winred_contributions |>
 
 Describe what you think this code is doing below. What does the answer represent, compared to the results from `head()`?
 
-**Answer: This code groups the data by data, combining each contribution by date and adds each of them up to count how many contributions happened on one day**
+**Answer: This code groups the data by combining each contribution that happened on the same date and added them together to count how many contributions happened on each day**
 
 ### Task 7: Adding arrange()
 
@@ -145,7 +145,7 @@ maryland_winred_contributions |>
 
 Compared to the previous codeblock, what has changed and how did that affect the result?
 
-**Answer: On top of the previous example, this code arranges the data by putting the day with the most contributions at the top and least at the bottom.**
+**Answer: This code arranges the data by putting the day with the most contributions at the top and least at the bottom.**
 
 ### Task 8: Multiple grouping
 
