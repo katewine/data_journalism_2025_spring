@@ -31,7 +31,7 @@ library(tidyverse)
 ```
 The library function loads an R library such as the tidyverse, providing access to the verbs and functions that library contains. You have to load a library before you can use its functions.
 
-Load the Maryland WinRed contributions dataset by running the following codeblock.
+Load the Maryland WinRed contributions dataset by running the following codeblock. 
 
 ```{r}
 maryland_winred_contributions <- read_rds("pre_lab_01.rds")
@@ -44,16 +44,33 @@ print("Hello World")
 ```{r}
 glimpse(maryland_winred_contributions)
 ```
-
+glimpse of all data, meta data
 
 ```{r}
 head(maryland_winred_contributions)
 ```
+shows first 6 rows
 
 ```{r}
 maryland_winred_contributions |>
   group_by(date) |>
   summarise(
     count_contribs = n()
-  )
+
+  )|>
+
+arrange(count_classes)
 ```
+|>  (and)
+group_by : groups by given input 
+summarize: new col
+n() : counts
+sum(): adds data
+
+ 
+
+
+
+
+
+
