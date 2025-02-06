@@ -61,6 +61,8 @@ maryland_winred_contributions |>
 
 arrange(count_classes)
 ```
+
+
 |>  (and)
 group_by : groups by given input 
 summarize: new col
