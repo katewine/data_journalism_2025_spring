@@ -81,7 +81,7 @@ arrange(count_charges)
 
 **Q5** Which prosecutor has prosecuted the most charges against homeless people? Is the top prosecutor related to any famous Floridians?
 
-**A5** The top prosecutor with the most charges is the State Attoney, Ginger Bowden Madden. Her father, former Florida State Seminoles football coach Bobby Bowden, is considered one of the greatest college football coaches of all time. according to a pensacola news journal article i just looked up
+**A5** The top prosecutor with the most charges is the State Attorney, Ginger Bowden Madden. Her father, former Florida State Seminoles football coach Bobby Bowden, is considered one of the greatest college football coaches of all time. according to a pensacola news journal article i just looked up
 
 ```{r}
 homeless_charges |>
@@ -111,11 +111,11 @@ summarize (
 
 **Q7** What prosecutor has prosecuted the most cases against a single homeless person?
 
-**A7** Ginger Bowden Madden
+**A7** athenia c singleton
 
 ```{r}
 homeless_charges |>
-  group_by(prosecutor)|>
+  group_by(prosecutor, defendant)|>
 summarize (
   cases = n_distinct(case_number)
 )|>
@@ -124,7 +124,7 @@ summarize (
 
 **Q8** We need to create a dataframe that will help us when we are reporting on the ground. Building off our work so far, we need a dataframe that includes the name of every homeless person who was charged with a crime and some important counts about their interactions with the criminal justice system. Create a dataframe that includes the name of each homeless person, the number of charges they have faced, the number of cases they have been involved in, how many dollars they have been assessed in fines, the average fine imposed on them and the median fine imposed upon them. Then sort the data frame so the person with the most charges is at the top. 
 
-**A8**
+**A8** 
 
 ```{r}
 homeless_charges|>
@@ -142,5 +142,5 @@ summarize (
 **Q9** Please describe a short reporting plan for how you would use the data you have generated in **A8** to report on the criminal justice system in Okaloosa County, Florida. Who are the people we should talk to? What more should we do with our data analysis to be certain we know what the story is?
 
 **A9**
-We should reach out to the State Attorney's office, the  people involved. As for further data analysis we should figure out why these people are being arrested. 
+We should reach out to the State Attorney's office, the  people involved. As for further data analysis, we should figure out why these people are being arrested. 
 
