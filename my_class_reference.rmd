@@ -62,17 +62,31 @@ maryland_winred_contributions |>
 arrange(count_classes)
 ```
 
+group_by : function that takes input (name of column you're grouping by). columns are attributes-- chooses which attribute to focus on
+
+summarize : does the math, counting n()
+
+
+
+
 
 |>  (and)
 group_by : groups by given input 
 summarize: new col
-n() : counts
+n() : counts number of rows/entries that exist per grouped attribute
 sum(): adds data
-
+n_distinct: only counts entry once, even if it appears multiple times
+unique() : gets rid of all other rows
+ 
+ 
+ mutate : function that creates a new column based on math with other columns, for every 
  
 lubridate
 
+County %in% c("Montgomery", "Prince George's", "Frederick")
 
 
+TRUE 
 
+if the county name is in the column-- then assign it to new name
 
