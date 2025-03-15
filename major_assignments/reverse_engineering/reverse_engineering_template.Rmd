@@ -1,6 +1,6 @@
 ---
 title: "Reverse Engineering Project"
-author: "Mira Biernhart, Laura Shaugnessy, Katelynn Winebrenner"
+author: "Mira, Laura , Katelynn "
 date: "March 15, 2025"
 output:
   html_document:
