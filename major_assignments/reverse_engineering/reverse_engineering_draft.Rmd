@@ -1,0 +1,35 @@
+---
+title: "reverse engineering practice"
+author: "katelynn winebrenner"
+date: "2025-3-15"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# turn off sci notation
+options(scipen=999)
+library(tidyverse)
+library(lubridate)
+```
+```{r}
+wes_moore <- read_csv("data/wesmoore2.csv")
+
+```
+
+
+```{r}
+wes_moore |>
+glimpse()
+```
+
+```{r}
+wes_moore |>
+group_by(`Receiving Committee`)|>
+  summarise(
+    total_2021_contribs = sum(`Contribution Amount`)
+  )
+```

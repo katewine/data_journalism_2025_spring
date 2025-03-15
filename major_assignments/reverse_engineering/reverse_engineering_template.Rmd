@@ -1,7 +1,7 @@
 ---
 title: "Reverse Engineering Project"
-author: "Student names here"
-date: "Date here"
+author: "Mira Biernhart, Laura Shaugnessy, Katelynn Winebrenner"
+date: "March 15, 2025"
 output:
   html_document:
     theme: cerulean
@@ -18,14 +18,16 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Introduction 
 
-In this notebook, we are reverse engineering the story, [STORY NAME](STORY URL)
+In this notebook, we are reverse engineering the story, [Millions in out-of-state donations help fuel high-profile Maryland Democratic governor candidates](https://cnsmaryland.org/2022/03/03/millions-in-out-of-state-donations-help-fuel-high-profile-maryland-democratic-governor-candidates/)
 
 ## Load libraries
 
 Loading required libraries for this analysis.
 
 ```{r echo=FALSE, message=FALSE}
-
+options(scipen=999)
+library(tidyverse)
+library(lubridate)
 ```
 
 ## Load and Cleaning Data
@@ -35,10 +37,11 @@ In this section, describe the source of the data, write a basic data dictionary 
 ```{r}
 # Load required data
 
+wes_moore <- read_csv("data/wesmoore.csv")
+
 # Path to data should be loaded from folder "data" i.e. read_csv("data/name_of_data.csv")
 
 # Clean required data and prepare for analysis if needed. 
-
 
 ```
 
