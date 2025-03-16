@@ -127,15 +127,83 @@ group_by(contrib_location)|>
 
 ### Sentence 2
 
-* **Sentence text**: [Paste in sentence to engineer here]
-* **Analysis summary**: [Write up two to three sentences describing the results of your analysis.  Were you able to confirm the finding? If not, why not?]
+* **Sentence text**: John B. King, former secretary of Education under President Barack Obama, raised $2.2 million in campaign funding last year. Only 11%, just under $240,000, came from Maryland donors. King raised over $534,000 in New York alone.
+
+
+* **Analysis summary**: Yes, we were able to replicate this finding. King raised exactly 2,199,015	for his campaign. 534478.44 came from New York state. Only 238,527	came from Maryland-- that is about 11% of his total. The N/A problem here persists because this is the same code that I used for the Wes Moore dataframe.
+
 
 ```{r}
-# Put code to reverse engineer sentence here
-
-# Display results of code below this codeblock
+###cleaning column names
+cleaned_king <- king |>
+clean_names() |>
+glimpse()
+```
+```{r}
+###checking data: moore did receive over $4 million in campaign contribs this report.
+cleaned_king |>
+group_by(receiving_committee)|>
+  summarise(
+    total_contrib_amount = sum(contribution_amount)
+  )
+```
+```{r}
+###mutating state out of contributor address data
+states_king <- cleaned_king |>
+    mutate(contributor_state = str_extract(contributor_address, "\\b[A-Z]{2}(?=\\s+\\d{5}\\b)"))
+### mutate code from ChatGPT: I entered the data and asked for "a new column that outputs the state within the contributor address column using R tidyverse"
+states_king |>
+head()
 
 ```
+```{r}
+###adding up contrib amounts per state 
+state_contribs_king <- states_king |>
+group_by(contributor_state)|>
+  summarise(
+    state_contribs = sum(contribution_amount)
+  )|>
+  arrange(desc(state_contribs)) |>
+
+glimpse()
+ ### New York Contribution amount: 534,478.44  
+
+```
+```{r}
+state_contribs_king |>
+  ### comparing in state contribution amount to out-of-state
+  mutate( contrib_location = case_when(
+      contributor_state!="MD" ~ "Out of State",
+      contributor_state== "MD" ~ "Maryland",
+    )
+
+    )|>
+  ### this is where the NA problem is. unclear how to fix
+
+group_by(contrib_location)|>
+  summarise(
+   total_contribution = sum(state_contribs)
+  )
+
+```
+
+```{r}
+238527/2199015	
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ### Sentence 3
 
