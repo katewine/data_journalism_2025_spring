@@ -34,10 +34,22 @@ library(lubridate)
 
 In this section, describe the source of the data, write a basic data dictionary for data you are working with, and discuss any caveats or issues you discovered working with this data. 
 
+**QUESTION FOR RYAN** Hi, we were unable to find the contribution data for the Rush Baker campaign through the website, so instead of loading all seven candidates we only have six.
+
 ```{r}
 # Load required data
 
-wes_moore <- read_csv("data/wesmoore.csv")
+moore <- read_csv("data/wesmoore.csv")
+
+gansler <- read_csv("data/douggansler.csv")
+
+king <- read_csv("data/johnking.csv")
+
+schulz <- read_csv("data/kellyschulz.csv")
+
+perez <- read_csv("data/tomperez.csv")
+
+franchot <- read_csv("data/peterfranchot.csv")
 
 # Path to data should be loaded from folder "data" i.e. read_csv("data/name_of_data.csv")
 
@@ -50,15 +62,61 @@ In this notebook, we are reverse engineering five sentences from the story.
 
 ### Sentence 1
 
-* **Sentence text**: [Paste in sentence to engineer here]
-* **Analysis summary**: [Write up two to three sentences describing the results of your analysis.  Were you able to confirm the finding? If not, why not?]
+* **Sentence text**: Moore, a U.S. Army veteran and bestselling author, built a campaign war chest that included over $2.3 million in out-of-state contributions.
+* **Analysis summary**: First, I would like to complain about finding the data on the Maryland Campaign contribution database. That website is hell. OK. We were able to confirm the finding. out of Wes Moore's $4,127,418 in campaign fudning, according to his campaigns 2021 Annual report, $2387822.72	of that came from out of state. Less than $2 million was actually from maryland contributors. In our code that differentiates Maryland from Out of State contributions, there is an NA, and I'm not sure why. It must be from the mutate(case_when...) code, but I consulted chatgpt to get the state out of the address. Even with that issue though, we were still able to re-engineer this first sentence.
 
 ```{r}
-# Put code to reverse engineer sentence here
-
-# Display results of code below this codeblock
+cleaned_moore <- moore |>
+clean_names() |>
+glimpse()
+```
+```{r}
+cleaned_moore |>
+group_by(receiving_committee)|>
+  summarise(
+    total_contrib_amount = sum(contribution_amount)
+  )
+```
+```{r}
+states_moore <- cleaned_moore |>
+    mutate(contributor_state = str_extract(contributor_address, "\\b[A-Z]{2}(?=\\s+\\d{5}\\b)"))
+###mutate code from ChatGPT: I entered the data and asked for a new column that outputs the state within the contributor address column using R tidyverse
+states_moore |>
+head()
 
 ```
+```{r}
+state_contribs_moore <- states_moore |>
+group_by(contributor_state)|>
+  summarise(
+    state_contribs = sum(contribution_amount)
+  )|>
+  arrange(desc(state_contribs)) |>
+  
+  glimpse()
+
+```
+```{r}
+state_contribs_moore |>
+  
+  mutate( contrib_location = case_when(
+      contributor_state!="MD" ~ "Out of State",
+      contributor_state== "MD" ~ "Maryland",
+    ))|>
+
+group_by(contrib_location)|>
+  summarise(
+   total_contribution = sum(state_contribs)
+  )
+
+```
+
+
+
+
+
+
+
 
 ### Sentence 2
 
