@@ -14,22 +14,64 @@ knitr::opts_chunk$set(echo = TRUE)
 options(scipen=999)
 library(tidyverse)
 library(lubridate)
-```
-```{r}
-wes_moore <- read_csv("data/wesmoore2.csv")
-
+library(refinr)
+library(janitor)
 ```
 
 
+
 ```{r}
-wes_moore |>
+wes_moore <- read_csv("data/wesmoore.csv")
+
+```
+
+
+```{r}
+cleaned_wes_moore <- wes_moore |>
+clean_names() |>
 glimpse()
 ```
 
 ```{r}
-wes_moore |>
-group_by(`Receiving Committee`)|>
+cleaned_wes_moore |>
+group_by(receiving_committee)|>
   summarise(
-    total_2021_contribs = sum(`Contribution Amount`)
+    total_2021_contribs = sum(contribution_amount)
   )
+```
+```{r}
+states_wes_moore <- cleaned_wes_moore |>
+    mutate(contributor_state = str_extract(contributor_address, "\\b[A-Z]{2}(?=\\s+\\d{5}\\b)"))
+###mutate code from ChatGPT: I entered the data and asked for a new column that outputs the state within the contributor address column using R tidyverse
+states_wes_moore |>
+head()
+
+```
+
+```{r}
+state_contribs_wes_moore <- states_wes_moore |>
+group_by(contributor_state)|>
+  summarise(
+    state_contribs = sum(contribution_amount)
+  )|>
+  arrange(desc(state_contribs)) |>
+  
+  glimpse()
+
+
+```
+
+```{r}
+state_contribs_wes_moore |>
+  
+  mutate( contrib_location = case_when(
+      contributor_state!="MD" ~ "Out of State",
+      contributor_state== "MD" ~ "Maryland",
+    ))|>
+
+group_by(contrib_location)|>
+  summarise(
+   total_contribution = sum(state_contribs)
+  )
+
 ```
