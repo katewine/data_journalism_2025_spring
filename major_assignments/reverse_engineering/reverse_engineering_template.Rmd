@@ -65,17 +65,17 @@ In this notebook, we are reverse engineering five sentences from the story.
 ### Sentence 1
 
 * **Sentence text**: Moore, a U.S. Army veteran and bestselling author, built a campaign war chest that included over $2.3 million in out-of-state contributions. 
-* **Analysis summary**: First, I would like to complain about finding the data on the Maryland Campaign contribution database. That website is hell. OK. We were able to confirm the finding. Out of Wes Moore's 4,127,418 dollars in campaign funding, according to his campaign's 2021 Annual report, 2387822.72 dollars came from out of state. Less than 2 million was actually from Maryland contributors, which the story does mention: "Moore raised over $1.7 million in Maryland, the highest total of any candidate," so we confirmed that too.
+* **Analysis summary**: We were able to confirm the finding. Out of Wes Moore's 4,127,418 dollars in campaign funding, 2387822.72 dollars came from out-of-state donations. Less than 2 million was from Maryland donations, which the story does mention: "Moore raised over $1.7 million in Maryland, the highest total of any candidate," so we replicated that finding too.
 
 ```{r}
-###cleaning column names
+#cleaning column names
 cleaned_moore <- moore |>
 clean_names()
 ```
 
 
 ```{r}
-###checking data: moore did receive over $4 million in campaign contribs this report.
+#checking total contrib amount
 cleaned_moore |>
 group_by(receiving_committee)|>
   summarise(
@@ -85,16 +85,14 @@ group_by(receiving_committee)|>
 
 
 ```{r}
-###mutating state out of contributor address data
-
+#mutating state out of contributor address data
 
 states_moore <- cleaned_moore |>
     mutate(contributor_state = str_extract(contributor_address, "\\b[A-Z]{2}(?=\\s+\\d{5}\\b)"))|>
   
-  
-          
-### mutate code from ChatGPT: I entered the data and asked for "a new column that outputs the state within the contributor address column using R tidyverse"
+# The mutate code here is from ChatGPT. I entered the data and asked for "a new column that outputs the state within the contributor address column using R tidyverse"
 
+# Here I sorted the state by top contributions per state
 group_by(contributor_state)|>
   summarise(
     state_contribs = sum(contribution_amount)
@@ -103,12 +101,12 @@ group_by(contributor_state)|>
 ```
 
 ```{r}
- ### comparing in state contribution amount to out-of-state
+ ### Comparing in-state contribution amounts to out-of-state/overseas contribution amounts
   state_contribs_moore <- states_moore|>
   
     mutate(
       contrib_location = case_when(
-    is.na(contributor_state) ~ "Overseas", #code from chatgpt-- how to use is.na or something similar in a case_when mutate function
+    is.na(contributor_state) ~ "Overseas", #Code here is from from ChatGPT. I asked how to use 'is.na' or something similar in a case_when mutate function
     contributor_state!="MD" ~ "Out of State",
       contributor_state== "MD" ~ "Maryland"
   ))|>
@@ -123,24 +121,22 @@ group_by(contrib_location)|>
 ```
 
 
-
-
-
 ### Sentence 2
 
 * **Sentence text**: John B. King, former secretary of Education under President Barack Obama, raised $2.2 million in campaign funding last year. Only 11%, just under $240,000, came from Maryland donors. King raised over $534,000 in New York alone.
 
 
-* **Analysis summary**: Yes, we were able to replicate this finding. King raised exactly 2,199,015	for his campaign. 534478.44 came from New York state. Only 238,527	came from Maryland-- that is about 11% of his total.
+* **Analysis summary**: Yes, we were able to replicate this finding. King raised exactly 2,199,015 dollars for his campaign. 534478.44 of that came from New York state. Only 238,527 dollars came from Maryland. That is about 11% of his total.
 
 ```{r}
-###cleaning column names
+#cleaning column names
 cleaned_king <- king |>
 clean_names()
 ```
 
 
 ```{r}
+#checking total contrib amount
 cleaned_king |>
 group_by(receiving_committee)|>
   summarise(
@@ -150,11 +146,11 @@ group_by(receiving_committee)|>
 
 
 ```{r}
-###mutating state out of contributor address data
+#mutating state out of contributor address data
 states_king <- cleaned_king |>
     mutate(contributor_state = str_extract(contributor_address, "\\b[A-Z]{2}(?=\\s+\\d{5}\\b)"))|>
 
-### mutate code from ChatGPT: I entered the data and asked for "a new column that outputs the state within the contributor address column using R tidyverse"
+# The mutate code here is from ChatGPT: I entered the data and asked for "a new column that outputs the state within the contributor address column using R tidyverse"
 
 group_by(contributor_state)|>
   summarise(
@@ -164,12 +160,12 @@ group_by(contributor_state)|>
 ```
 
 ```{r}
- ### comparing in state contribution amount to out-of-state
+ ### comparing in-state contribution amount to out-of-state
   state_contribs_king <- states_king|>
   
     mutate(
       contrib_location = case_when(
-    is.na(contributor_state) ~ "Overseas", #code from chatgpt-- how to use is.na or something similar in a case_when mutate function
+    is.na(contributor_state) ~ "Overseas", #This code is from ChatGPT. I asked how to use is.na or something similar in a case_when mutate function
     contributor_state!="MD" ~ "Out of State",
       contributor_state== "MD" ~ "Maryland"
   ))|>
@@ -189,7 +185,7 @@ group_by(contrib_location)|>
 ### Sentence 3
 
 * **Sentence text**: Tom Perez, a former leader of the Democratic National Committee, raised nearly $1.7 million in donations from outside Maryland.
-* **Analysis summary**: Yes, we were about to confirm this finding. 1,695,893.20 of Perez's campaign contributions came from out of state. 
+* **Analysis summary**: Yes, we were about to replicate this finding. 1,695,893.20 dollars of Perez's campaign contributions came from out of state. 
 
 
 ```{r}
@@ -199,6 +195,7 @@ clean_names()
 ```
 
 ```{r}
+#checking total contribution amount
 cleaned_perez |>
 group_by(receiving_committee)|>
   summarise(
@@ -207,15 +204,12 @@ group_by(receiving_committee)|>
 ```
 
 ```{r}
-###mutating state out of contributor address data
-
+#mutating state out of contributor address data
 
 states_perez <- cleaned_perez |>
     mutate(contributor_state = str_extract(contributor_address, "\\b[A-Z]{2}(?=\\s+\\d{5}\\b)"))|>
-  
-  
-          
-### mutate code from ChatGPT: I entered the data and asked for "a new column that outputs the state within the contributor address column using R tidyverse"
+
+### This mutate code is from ChatGPT. I entered the data and asked for "a new column that outputs the state within the contributor address column using R tidyverse."
 
 group_by(contributor_state)|>
   summarise(
@@ -248,17 +242,16 @@ group_by(contrib_location)|>
 
 * **Sentence text**: Moore, King and Perez stand in stark contrast to Peter Franchot, a former Maryland state delegate and current comptroller, who raised over 78% of his $1.66 million from inside Maryland.
 
-* **Analysis summary**: Yes we were able to confirm the findings. Franchot received 1.66 million for his campaign. 78% of that did come from inside of Maryland. Unlike the previous two candidatee he also received no overseas donations.
-
-[Write up two to three sentences describing the results of your analysis.  Were you able to confirm the finding? If not, why not?]
+* **Analysis summary**: Yes we were able to confirm the findings. Franchot received 1.66 million dollars for his campaign. 78% of that did come from inside of Maryland. Unlike the previous two candidates, he also received no overseas donations.
 
 ```{r}
-###cleaning column names
+# cleaning column names
 cleaned_franchot <- franchot |>
 clean_names()
 ```
 
 ```{r}
+# checking total contribution amount
 cleaned_franchot |>
 group_by(receiving_committee)|>
   summarise(
@@ -267,13 +260,11 @@ group_by(receiving_committee)|>
 ```
 
 ```{r}
-###mutating state out of contributor address data
-
-
+# mutating state out of contributor address data
 states_franchot <- cleaned_franchot |>
     mutate(contributor_state = str_extract(contributor_address, "\\b[A-Z]{2}(?=\\s+\\d{5}\\b)"))|>
   
-### mutate code from ChatGPT: I entered the data and asked for "a new column that outputs the state within the contributor address column using R tidyverse"
+# The mutate here is from code from ChatGPT. I entered the data and asked for "a new column that outputs the state within the contributor address column using R tidyverse"
 
 group_by(contributor_state)|>
   summarise(
@@ -288,7 +279,7 @@ group_by(contributor_state)|>
   
     mutate(
       contrib_location = case_when(
-    is.na(contributor_state) ~ "Overseas", #code from chatgpt-- how to use is.na or something similar in a case_when mutate function
+    is.na(contributor_state) ~ "Overseas", #The code here from chatgpt-- how to use is.na or something similar in a case_when mutate function
     contributor_state!="MD" ~ "Out of State",
       contributor_state== "MD" ~ "Maryland"
   ))|>
@@ -308,7 +299,7 @@ group_by(contrib_location)|>
 
 * **Sentence text**: An analysis of campaign data by Capital News Service found other candidates in the Democratic primary similarly drew from the well of money from other states. Their campaigns were fattened with donations from Democratic strongholds like New York, California and Chicago, campaign finance records show.
 
-* **Analysis summary**: We were able to recreate this finding. New York California and Illinois(Chicago) are some of the top contributors for candidates like Moore, Perez and King.
+* **Analysis summary**: We were able to recreate this finding. New York California and Illinois (Chicago) are some of the top contributors for candidates like Moore, Perez and King.
 
 
 ```{r}
