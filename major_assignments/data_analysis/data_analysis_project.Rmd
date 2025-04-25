@@ -54,7 +54,6 @@ uncleaned_precincts2024 <- read_csv("data/PG24_AllPrecincts.csv")
 # Clean 2020, column names to match, county names, combine column district and column precinct, select columns
 precincts2020 <- uncleaned_precincts2020 |>
   clean_names() |>
-  mutate(county = as.character(county)) |>
   mutate(county_name = case_when(
     county == "01" ~ "Allegany County",
     county == "02" ~ "Anne Arundel County",
