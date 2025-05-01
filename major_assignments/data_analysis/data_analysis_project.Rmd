@@ -41,6 +41,7 @@ library(tidyverse)
 library(lubridate)
 library(tidycensus)
 library(janitor)
+library(sf)
 ```
 
 ## Load and Clean Data
@@ -184,6 +185,10 @@ In this notebook, we are answering five questions about the data.
 * **Analysis summary**: 
 ```{r}
 
+
+
+
+
 ```
 
 
@@ -192,9 +197,63 @@ In this notebook, we are answering five questions about the data.
 
 ### Question 5
 
-* **Question**: How did voting behavior differ between races, genders and age groups? 
+* **Question**: How did voting behavior differ between precincts based on race, gender and age group? 
 
 * **Analysis summary**: 
 ```{r}
+# get census income data by tract
+md_income_data <- get_acs(
+  geography = "tract",
+  variables = "B19013_001",
+  state = "MD",
+  year = 2021,
+  geometry = TRUE
+)
+glimpse(md_income_data)
 
 ```
+```{r}
+#read precinct shapefile 
+glimpse(md_income_data)
+
+uncleaned_precincts_shape <- st_read("data/Maryland_Election_Boundaries_-_Precincts_2022/Maryland_Election_Boundaries_-_Precincts_2022.shp")
+
+```
+```{r}
+precincts_shape <- uncleaned_precincts_shape |>
+  clean_names()|>
+   mutate(
+    name = str_extract(name, "\\d{1,2}-\\d{3}"),  # Extract the district-precinct code (e.g., "29-002")
+    district = str_extract(name, "^\\d{1,2}"),  # Extract the district number (e.g., "29", "5", "12")
+    precinct_code = str_pad(district, width = 3, side = "left", pad = "0"),  # Pad district with leading zeros
+    name = str_replace(name, "^\\d{1,2}", precinct_code)  # Replace original district with padded district
+  ) |>
+  select(name, geometry)|>  # Keep only the formatted precinct_column
+rename(election_district_precinct = name)
+
+```
+```{r}
+#join precinct spatial data to election data
+geometry_precincts_combined <- precincts_shape |>
+  left_join(precincts_combined, join_by(election_district_precinct)) 
+```
+
+```{r}
+#join last dataframe with maryland income dataframe
+#make same type
+md_income_shape <- st_transform(md_income_data, st_crs(geometry_precincts_combined))
+```
+```{r}
+#join precinct data to county spatial data
+
+joined_data <- st_join(precincts_shape, md_income_shape)|>
+ rename(median_income = estimate)
+```
+
+```{r}
+
+election_economic_analysis <- left_join(joined_data, precincts_combined, by = "election_district_precinct")
+```
+
+
+
