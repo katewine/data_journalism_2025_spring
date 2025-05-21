@@ -36,16 +36,12 @@ We should be able to answer most of our questions with this data. However, we wi
 Loading required libraries for this analysis.
 
 ```{r echo=FALSE, message=FALSE}
-
 options(scipen=999)
+library(tidyverse)
 library(lubridate)
 library(tidycensus)
 library(janitor)
 library(sf)
-library(mapview)
-library(tigris)
-library(lubridate)
-library(tidyverse)
 ```
 
 ## Load and Clean Data
@@ -119,6 +115,7 @@ precincts2024 <- uncleaned_precincts2024|>
     total = (election_day + mail_in_1 + mail_in_2 + early + provisional),
     year = 2024
   )|>
+  
     select(year, county, county_name, election_district_precinct, office_name, candidate_name, party, election_day, early, mail_in_1, mail_in_2, provisional, total)|>
  filter(
     office_name == "President - Vice Pres",
@@ -134,23 +131,15 @@ precincts_combined <- bind_rows(precincts2020, precincts2024)
 ```
 
 
+
 ## Questions to answer
 In this notebook, we are answering five questions about the data.
-
-
-
-
-### Question 2
-
-* **Question**: How did voter turnout vary across precincts? What factors contributed to this? 
-
-* **Analysis summary**: 
 
 ### Question 1
 
 * **Question**: Which precincts experienced the most significant change in party support? 
 
-* **Analysis summary**: 
+* **Analysis summary**: To find out which precincts experienced the most significant change in party support, we filtered each dataset with 2020 and 2024 precincts to show only the precinct, county and party. Then, we joined the datasets together and calculated the democratic and republican percent changes for each. Through this analysis, we found that Baltimore County 009-029 had the largest republican percent change from 2020 to 2024 and Baltimore County 009-027 also had the largest democratic percent change from 2020 to 2024. Washington County and Harford County precincts also had large percent change in party support. Prince George's County 019-005 had the lowest democratic percent change and Washington County 013-002 had the lowest republican percent change. 
 
 ```{r}
 #Summarize votes by party (2020)
@@ -192,96 +181,354 @@ republican_changes <- vote_changes |>
 
 
 
+### Question 2
+
+* **Question**: How did voter turnout vary across precincts? What factors contributed to this? 
+
+* **Analysis summary**: To find how voter turnout varied across precincts from 2020 to 2024, we calculated the total number of votes by precinct for each year. We then seperated these datasets by year and joined them by precinct. We then calculated the percent changes for both increasing and decreasing votes. From this, we only looked at the top 10 precincts from each election district. We found that Prince George's County and Washington County had the largest decrease in voter turnout from 2020 to 2024. Prince George's County had small numbers within the dataset, with only 3 voters shown -- so this number is not reflective of the other precinct changes. Harford County had the largest increase in voter turnout, along with various precincts in Baltimore County. 
+
+```{r}
+#Total votes by precinct (2020 and 2024)
+voter_turnout_summary <- precincts_combined |>
+  group_by(year, election_district_precinct, county_name) |>
+  summarize(total_voter_turnout = sum(total,na.rm=TRUE), .groups="drop")
+
+#Seperate by year 
+voter_turnout_2020 <- voter_turnout_summary |>
+  filter(year == 2020) |>
+  select(election_district_precinct, county_name, total_turnout_2020 = total_voter_turnout)
+
+voter_turnout_2024 <- voter_turnout_summary |>
+  filter(year == 2024) |>
+  select(election_district_precinct, county_name, total_turnout_2024 = total_voter_turnout)
+
+#Join by precinct 
+voter_turnout_changes <- left_join(voter_turnout_2020,voter_turnout_2024, by = c("election_district_precinct", "county_name")) |>
+  mutate(change = total_turnout_2024 - total_turnout_2020, 
+         percent_change= (change/total_turnout_2020) * 100)
+
+#View largest increase and decrease 
+top_voter_increases <- voter_turnout_changes |>
+  arrange(desc(percent_change)) |>
+  slice_head(n=10)
+
+top_voter_decreases <- voter_turnout_changes |>
+  arrange(percent_change) |>
+  slice_head(n=10)
+  
+
+
+```
+
+
+
+
+
+
+
 
 ### Question 3
 
 * **Question**: How did early voting and mail-in ballots influence precinct-level results? 
 
 
-* **Analysis summary**: 
+* **Analysis summary**: In order to figure out how mail-in ballots and early voting influence precinct-level results, I filtered the data by year and then summarized it, grouping by precinct, county name, party, early, provisional, and total amount of votes. I did this for both 2020 and 2024, then I calculated the percentage difference for early, mail-in, and provisional votes. Next, I changed the format in order to properly plot it and used ggplot to make a bar chart demonstrating the difference in mail-in and early votes based on party and year. You can see from the chart that Democrats make up a significantly higher number of mail-in votes, with the percentage in 2020 being nearly 60%. Republicans, on the other hand, make up a higher percentage of early votes. Ultimately, voting methods are somewhat split between party, meaning that precinct-level elections for these years would've received a higher number of main-ins from Democrats and a higher number of early votes from Republicans. 
 
 ```{r}
+#summarize votes by method in 2020
+methods_2020 <- precincts_combined |>
+  filter(year == 2020) |>
+  group_by(
+    election_district_precinct, county_name, party, early, mail_in_1, mail_in_2, provisional, total
+  ) |>
+    summarize(
+      total_votes_20 = sum(total,na.rm = TRUE),
+      .groups = "drop"
+    ) |>
+  mutate(year=2020)
+  
 
+#summarize votes by method in 2024
+methods_2024 <- precincts_combined |>
+  group_by(
+    election_district_precinct, county_name, party, early, mail_in_1, mail_in_2, provisional, total
+  ) |>
+  summarize(
+    total_votes_24 = sum(total,na.rm = TRUE),
+    .groups = "drop"
+    ) |>
+  mutate(year=2024)
+
+methods_combined <- bind_rows (methods_2020, methods_2024)
+
+
+#calculate percentage difference
+methods_combined <- methods_combined |>
+  mutate(
+    early_percent = early/total,
+    mail_in_percent = (mail_in_1 + mail_in_2) / total,
+    provisional_percent = provisional / total
+  )
+
+methods_combined <- methods_combined |>
+  group_by(year, party) |>
+  summarise(
+    average_early = mean(early_percent, na.rm = TRUE),
+    average_mail = mean(mail_in_percent, na.rm = TRUE),
+    average_provisional = mean(provisional_percent, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+#change data to long format 
+#I used chat gpt to help convert data table to the correct format
+methods_plotted <- methods_combined |>
+  select(year, party, average_early, average_mail) |>
+pivot_longer(
+    cols = starts_with("average_"),
+  names_to = "method",
+  values_to = "percent"
+) |>
+mutate(
+  method = recode(method, average_early = "early", average_mail = "mail-in")
+)
+
+#plot data based on year and party to show differences between 2024 and 2020
+#I used chatgpt to help with the ggplot, including the facet_wrap and geom_col functions, as well as changing to to percent format
+ggplot(methods_plotted, aes(x=party, y=percent, fill=method)) +
+  geom_col(position = "dodge") +
+  facet_wrap(~year) +
+  labs(
+    title = "Early and Mail-In Votes Separated by Year and Party",
+    x = "party",
+    y = "average percent of votes",
+    fill = "voting method"
+  ) +
+
+scale_y_continuous (labels = scales::percent_format()) +
+  theme_minimal()
+
+
+  
+print(methods_combined)
 ```
+
 
 
 
 ### Question 4
 
-* **Question**: How did voting behavior differ between precincts based on economic status? 
+* **Question**: How did voting behavior differ between precincts based on economic status in 2020 and 2024? 
 
 * **Analysis summary**: 
+In order to analyze voting behavior based on economic status between the two years, I combined precinct and census tract spatial files to assign data to each precinct each year. From there I grouped by median income and election winner to determine the differences between each precinct. Overall, Donald Trump won more among precincts with mid-ranged median income precincts than the upper-range median income precincts, while the opposite was true for the Democratic candidates both years. 
+
+About 52% of the Maryland precincts that voted for Donald Trump in 2020 had a median income between 50,000 and 100,000. About 40% had a median income greater than $100,000, and about 7% earned 50,000 dollars or less.
+
+About 44.8% of the Maryland precincts that voted for Joe Biden in 2020 had a median income greater than 100,000. About 42% had a median income between 50,000 and 100,000, and about 13% earned 50,000 dollars or less.
+
+
+About 50% of the Maryland precincts that voted for Donald Trump in 2024 had a median income between 50,000 and 100,000. About 42.8% had a median income greater than $100,000, and about 7% earned 50,000 dollars or less.
+
+About 47.7% of the Maryland precincts that voted for Kamala Harris in 2024 had a median income greater than 100,000. About 39% had a median income between 50,000 and 100,000, and about 13% earned 50,000 dollars or less.
 
 
 
 ```{r}
-precincts_shape <- st_read("data/Maryland_Election_Boundaries_-_Precincts_2022/Maryland_Election_Boundaries_-_Precincts_2022.shp")|>
+#load precinct geography, load census geography, assign precinct economic status values to precincts
+precincts_geometry<- st_read("data/tl_2020_24_vtd20/tl_2020_24_vtd20.shp")|>
   clean_names()|>
-   mutate(
-    name = str_extract(name, "\\d{1,2}-\\d{3}"),  # Extract the district-precinct code (e.g., "29-002")
-    district = str_extract(name, "^\\d{1,2}"),  # Extract the district number (e.g., "29", "5", "12")
-    precinct_code = str_pad(district, width = 3, side = "left", pad = "0"),  # Pad district with leading zeros
-    name = str_replace(name, "^\\d{1,2}", precinct_code)  # Replace original district with padded district
-  ) |>
-rename(election_district_precinct = name)
+ mutate(
+  vtdst20 = str_replace(vtdst20, "^\\d+", ~str_pad(.x, width = 3, side = "left", pad = "0"))
+)|>
+mutate(
+    countyfp20 = case_when(
+      countyfp20 == "001" ~ "Allegany County",
+      countyfp20 == "003" ~ "Anne Arundel County",
+      countyfp20 == "005" ~ "Baltimore County",
+      countyfp20 == "009" ~ "Calvert County",
+      countyfp20 == "011" ~ "Caroline County",
+      countyfp20 == "013" ~ "Carroll County",
+      countyfp20 == "015" ~ "Cecil County",
+      countyfp20 == "017" ~ "Charles County",
+      countyfp20 == "019" ~ "Dorchester County",
+      countyfp20 == "021" ~ "Frederick County",
+      countyfp20 == "023" ~ "Garrett County",
+      countyfp20 == "025" ~ "Harford County",
+      countyfp20 == "027" ~ "Howard County",
+      countyfp20 == "029" ~ "Kent County",
+      countyfp20 == "031" ~ "Montgomery County",
+      countyfp20 == "033" ~ "Prince George's County",
+      countyfp20 == "035" ~ "Queen Anne's County",
+      countyfp20 == "037" ~ "St. Mary's County",
+      countyfp20 == "039" ~ "Somerset County",
+      countyfp20 == "041" ~ "Talbot County",
+      countyfp20 == "043" ~ "Washington County",
+      countyfp20 == "045" ~ "Wicomico County",
+      countyfp20 == "047" ~ "Worcester County",
+      countyfp20 == "510" ~ "Baltimore City",
+      TRUE ~ NA_character_
+    ))|>
+  rename(election_district_precinct = vtdst20,
+         county_name = countyfp20)|>
+  select(
+    county_name, election_district_precinct, geoid20,geometry
+  )
 
-
-#join precinct data to geo data
-
-geometry_precincts_2020 <- precincts_shape |>
-  left_join(precincts2020, join_by(election_district_precinct)) 
-
-geometry_precincts_2024 <- precincts_shape |>
-  left_join(precincts2024, join_by(election_district_precinct)) 
 
 #load census tracts, income data
-median_income_pop <- get_acs(
+median_income <- get_acs(
   geography = "tract",
   variables = "B19013_001",
   state = "MD",
-  year = 2021,
+  year = 2020,
   geometry = TRUE,
   ) |> 
   clean_names()
   
+
+precincts_geometry <- precincts_geometry |>
+  st_transform(crs=5070)
+
+median_income <- median_income|>
+  st_transform(crs=5070)
+
+#join tracts and precincts
+intersections <- st_intersection(median_income,precincts_geometry)
+
+intersections <-intersections |>
+  mutate(intersection_area = st_area(geometry))
+
+
+max_overlap <- intersections |>
+  group_by(county_name, election_district_precinct) |>
+  slice_max(order_by = intersection_area, n = 1, with_ties = FALSE) %>%
+  ungroup()
+
+precincts_with_tract_data <- precincts_geometry |>
+  left_join(st_drop_geometry(max_overlap), by = c("county_name", "election_district_precinct"))
+
+
+precinct_median_incomes_2020 <- precincts2020 |>
+  left_join(st_drop_geometry(max_overlap), by = c("county_name", "election_district_precinct"))|>
+  rename(median_income = estimate)|>
+  mutate(
+    median_income_group = case_when(
+  median_income <= 50000 ~ "$50,000 or less",
+  median_income <= 100000 ~ "$50,000 to $100,000",
+  TRUE ~ "Over $100,000"
+  ))
+
+
+precinct_median_incomes_2024 <- precincts2024 |>
+  left_join(st_drop_geometry(max_overlap), by = c("county_name", "election_district_precinct"))|>
+  rename(median_income = estimate)|>
+  mutate(
+    median_income_group = case_when(
+  median_income <= 50000 ~ "$50,000 or less",
+  median_income <= 100000 ~ "$50,000 to $100,000",
+  TRUE ~ "Over $100,000"
+  ))
+
+
   
-
-median_income_pop |>
-  as.data.frame()
-
-
-
 ```
 
-```{r error=TRUE}
-geometry_precincts_2020 <- geometry_precincts_2020 |>
-  st_transform(crs=5070)
-
-geometry_precincts_2024 <- geometry_precincts_2024 |>
-  st_transform(crs=5070)
-
-median_income_pop <- median_income_pop|>
-  st_transform(crs=5070)
-
-
-# Perform a spatial join using st_within
-#spatial_join_2020 <- st_within(geometry_precincts_2020, median_income_pop, sparse = FALSE)
-
-#spatial_join_2024  <- st_within(geometry_precincts_2024, median_income_pop, sparse = FALSE)
-
-```
 
 ```{r}
-MAP :()
-map <- mapview(geometry_precincts_2020, 
-               col.region = "blue", + # Set the color of the precincts
-       mapview(median_income_pop, 
-                     col.region = "red", # Set the color of the census tracts
-                     alpha.region = 0.8,
-                     cex = 2, # Set the transparency
-                     legend = TRUE) # Enable the legend
+#find winners, analyze precinct voting based on precinct economic status
+econ_trump2020<- precinct_median_incomes_2020 |>
+  filter(candidate_name == "Donald J. Trump")|>
+  select(county_name, election_district_precinct,total,median_income_group)|>
+  rename(trump_total_votes=total)
+    
+econ_biden2020<- precinct_median_incomes_2020 |>
+  filter(candidate_name == "Joe Biden")|>
+  select(county_name, election_district_precinct,total,median_income_group)|>
+  rename(biden_total_votes=total)
 
-view(map)
+econ_election2020 <- econ_trump2020|>
+  left_join(econ_biden2020, join_by(county_name, election_district_precinct,median_income_group))|>
+  mutate(
+    # Replace NA vote counts with 0 -- ChatGPT
+    trump_total_votes = replace_na(trump_total_votes, 0),
+    biden_total_votes = replace_na(biden_total_votes, 0),
+    total_votes = biden_total_votes + trump_total_votes,
+    # Prevent divide-by-zero by using if_else -- ChatGPT
+    pct_trump = if_else(total_votes == 0, NA_real_, (trump_total_votes / total_votes) * 100),
+    pct_biden = if_else(total_votes == 0, NA_real_, (biden_total_votes / total_votes) * 100),
+    winner= case_when(
+      pct_trump>=50 ~ "Trump",
+      pct_biden>=50 ~"Biden",
+      TRUE ~ "No Majority Winner"
+    )
+  )|>
+  select(county_name,election_district_precinct,winner,median_income_group)|>
+  group_by(winner,median_income_group)|>
+    summarise(
+      precincts = n()
+    )|>
+    filter(!is.na(winner))|>
+    mutate(
+      total_precincts_won = sum(precincts)
+    )|>
+    arrange(desc(total_precincts_won))
+  
+  econ_analysis2020 <- econ_election2020|>
+    mutate(
+      precinct_pct = (precincts/ total_precincts_won)*100
+    )|>
+    select(winner, median_income_group,precincts,precinct_pct)
+
+econ_analysis2020
+
+
+
+#2024
+
+econ_trump2024<- precinct_median_incomes_2024 |>
+  filter(candidate_name == "Donald J. Trump and JD Vance")|>
+  select(county_name, election_district_precinct,total,median_income_group)|>
+  rename(trump_total_votes=total)
+    
+econ_harris2024<- precinct_median_incomes_2024 |>
+  filter(candidate_name == "Kamala D. Harris and Tim Walz")|>
+  select(county_name, election_district_precinct,total,median_income_group)|>
+  rename(harris_total_votes=total)
+
+econ_election2024 <- econ_trump2024|>
+  left_join(econ_harris2024, join_by(county_name, election_district_precinct,median_income_group))|>
+  mutate(
+    # Replace NA vote counts with 0 -- ChatGPT
+    trump_total_votes = replace_na(trump_total_votes, 0),
+    harris_total_votes = replace_na(harris_total_votes, 0),
+    total_votes = harris_total_votes + trump_total_votes,
+    # Prevent divide-by-zero by using if_else -- ChatGPT
+    pct_trump = if_else(total_votes == 0, NA_real_, (trump_total_votes / total_votes) * 100),
+    pct_biden = if_else(total_votes == 0, NA_real_, (harris_total_votes / total_votes) * 100),
+    winner= case_when(
+      pct_trump>=50 ~ "Trump",
+      pct_biden>=50 ~"Harris",
+      TRUE ~ "No Majority Winner"
+    )
+  )|>
+  select(county_name,election_district_precinct,winner,median_income_group)|>
+  group_by(winner,median_income_group)|>
+    summarise(
+      precincts = n()
+    )|>
+    filter(!is.na(winner))|>
+    mutate(
+      total_precincts_won = sum(precincts)
+    )|>
+    arrange(desc(total_precincts_won))
+  
+  econ_analysis2024 <- econ_election2024|>
+    mutate(
+      precinct_pct = (precincts/ total_precincts_won)*100
+    )|>
+    select(winner, median_income_group,precincts,precinct_pct)
+
+econ_analysis2024
 ```
 
 
@@ -290,7 +537,7 @@ view(map)
 
 * **Question**: How did voting behavior differ between precincts based on race in 2020 and 2024?
 
-* **Analysis summary**: 
+* **Analysis summary**: In order to analyze voting behavior by precinct based on race both years, I found a premade racial data set per precinct based on the 2020 census. Using this, I assigned racial majorities to precincts and grouped by race and winner to compare by winner and year.
 
 In 2020, Trump won in about 532 Maryland precincts; 98.5% of those precincts have a white racial majority. He won in two majority Hispanic precincts.
 
@@ -303,7 +550,7 @@ In 2024, Harris won in about 1318 Maryland precincts; 36% of those have a white 
 
 
 ```{r}
-#assign racial majority to precincts based on Maryland Planning Board data:  https://planning.maryland.gov/Redistricting/Pages/2020/precinct.aspx
+#assign racial majority to precincts based on Maryland Planning Board data based on 2020 census:  https://planning.maryland.gov/Redistricting/Pages/2020/precinct.aspx
 
 uncleaned_precinct_population <- read_csv("data/precinct_population_data.csv") 
 
@@ -385,7 +632,8 @@ election2020 <- trump2020|>
   racial_analysis2020 <- election_population_2020|>
     mutate(
       precinct_pct = (precincts/ total_precincts_won)*100
-    )
+    )|>
+    select(winner,race,precincts,precinct_pct)
 #run analysis
   racial_analysis2020
     
@@ -435,12 +683,11 @@ election2024 <- trump2024|>
     mutate(
       precinct_pct = (precincts/ total_precincts_won)*100
     )|>
-    arrange(desc(precinct_pct))
+    arrange(desc(precinct_pct))|>
+    select(winner, race,precincts,precinct_pct)
   
 #run analysis
     racial_analysis2024
  
 ```
-
-
 
