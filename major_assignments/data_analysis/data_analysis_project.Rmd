@@ -401,7 +401,7 @@ intersections <-intersections |>
 
 max_overlap <- intersections |>
   group_by(county_name, election_district_precinct) |>
-  slice_max(order_by = intersection_area, n = 1, with_ties = FALSE) %>%
+  slice_max(order_by = intersection_area, n = 1, with_ties = FALSE) |>
   ungroup()
 
 precincts_with_tract_data <- precincts_geometry |>
